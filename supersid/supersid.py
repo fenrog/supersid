@@ -19,6 +19,7 @@ import sys
 import os.path
 import argparse
 import subprocess
+import time                                                                         # TODO(KlHo): delete
 
 # SuperSID Package classes
 from sidtimer import SidTimer
@@ -41,6 +42,9 @@ class SuperSID():
         self.timer = None
         self.sampler = None
         self.viewer = None
+        self.exec_time = 0                                                          # TODO(KlHo): delete
+        self.exec_count = 0                                                         # TODO(KlHo): delete
+        self.exec_max = 0                                                           # TODO(KlHo): delete
 
         # read the configuration file or exit
         self.config = readConfig(args.cfg_filename)
@@ -147,6 +151,7 @@ class SuperSID():
 
         Triggered by SidTimer every 'log_interval' seconds
         """
+        start = time.time()                                                         # TODO(KlHo): delete
         # current_index is the position in the buffer calculated
         # from current UTC time
         current_index = self.timer.data_index
@@ -155,6 +160,9 @@ class SuperSID():
         # Get new data and pass them to the View
         message = "%s  [%d]  Capturing data..." % (self.timer.get_utc_now(),
                                                    current_index)
+        if self.exec_count:                                                         # TODO(KlHo): delete
+            average = self.exec_time / self.exec_count                              # TODO(KlHo): delete
+            message = "{:4.2f} {:4.2f} {}".format(average, self.exec_max, message)  # TODO(KlHo): delete
         self.viewer.status_display(message, level=1)
         signal_strengths = []
         try:
@@ -209,7 +217,16 @@ class SuperSID():
 
         # end of this thread/need to handle to View to display
         # captured data & message
+        if self.exec_count:                                                         # TODO(KlHo): delete
+            average = self.exec_time / self.exec_count                              # TODO(KlHo): delete
+            message = "{:4.2f} {:4.2f} {}".format(average, self.exec_max, message)  # TODO(KlHo): delete
         self.viewer.status_display(message, level=2)
+        end = time.time()                                                           # TODO(KlHo): delete
+        duration = end - start                                                      # TODO(KlHo): delete
+        self.exec_time += duration                                                  # TODO(KlHo): delete
+        self.exec_count += 1                                                        # TODO(KlHo): delete
+        if duration > self.exec_max:                                                # TODO(KlHo): delete
+            self.exec_max = duration                                                # TODO(KlHo): delete
 
     def save_current_buffers(self, filename='', log_type='raw',
                              log_format='both'):
