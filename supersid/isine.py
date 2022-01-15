@@ -9,7 +9,7 @@ from multiprocessing import Queue
 from queue import Empty
 from math import pi, sin
 import struct
-import alsaaudio
+import alsaaudio    # pylint: disable=import-error
 import argparse
 
 

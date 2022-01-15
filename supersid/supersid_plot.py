@@ -39,9 +39,11 @@ from config import readConfig, printConfig, CONFIG_FILE_NAME
 from supersid_common import exist_file
 
 try:
-    clock = time.process_time   # new in Python 3.3
+    # new in Python 3.3
+    clock = time.process_time
 except Exception:
-    clock = time.clock          # removed in Python 3.8
+    # removed in Python 3.8
+    clock = time.clock    # pylint: disable=no-member
 
 
 PAPER_SIZE = {
@@ -441,7 +443,7 @@ if __name__ == '__main__':
     if args.filename is None:  # no --file option specified
         if len(args.file_list) > 0:
             # last non options arguments are assumed to be a list of file names
-            filenames = ",".join(unk)
+            filenames = ",".join(args.file_list)
         else:
             # try building the file name from given options
             # or found in the provided .cfg file

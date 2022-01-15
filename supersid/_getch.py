@@ -20,11 +20,11 @@ class _Getch:
 class _GetchUnix:
     def __init__(self):
         import tty
-        import termios
+        import termios  # pylint: disable=import-error
 
     def __call__(self):
         import tty
-        import termios
+        import termios  # pylint: disable=import-error
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -37,10 +37,10 @@ class _GetchUnix:
 
 class _GetchWindows:
     def __init__(self):
-        import msvcrt
+        import msvcrt   # pylint: disable=import-error
 
     def __call__(self):
-        import msvcrt
+        import msvcrt   # pylint: disable=import-error
         if sys.version[0] < '3':
             return msvcrt.getch()
         else:

@@ -133,6 +133,11 @@ class alsa(object):
         'LAST': 0,  # STD
     }
 
+    # pylint doesn't scan __new__ constructors
+    # avoid pylint E1101: Instance of 'alsa' has no 'executable' member (no-member)
+    # avoid pylint E1101: Instance of 'arecord' has no 'executable' member (no-member)
+    executable: str
+
     def __new__(cls, executable_name, verbose):
         executable = shutil.which(executable_name)
         if executable is None:
@@ -208,6 +213,10 @@ class aplay(alsa):
 
 
 class speaker_test():
+    # pylint doesn't scan __new__ constructors
+    # avoid pylint E1101: Instance of 'speaker_test' has no 'ap' member (no-member)
+    ap: object
+
     def __new__(cls, verbose):
         ap = aplay(verbose)
         if ap is None:

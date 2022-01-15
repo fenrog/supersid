@@ -62,7 +62,14 @@ class SidFile():
         """
         self.version = "1.4 20150801"
         self.filename = filename
-        self.sid_params = sid_params    # dictionary of all header pairs
+
+        # dictionary of all header pairs
+        # dict() enforces a new instance of sid_params for each instance of
+        # SidFile
+        # if dict() is not present, for the merge with -m sid1 and sid2 will
+        # share the same sid_params; sid2 effectively overwriting sid1
+        self.sid_params = dict(sid_params)
+
         self.is_extended = False
         self.timestamp_format = SidFile._TIMESTAMP_STANDARD
 
@@ -636,12 +643,19 @@ if __name__ == '__main__':
         sid1 = SidFile(args.filename_merge[0])
         sid2 = SidFile(args.filename_merge[1])
         if sid1.isSuperSID and sid2.isSuperSID:
-            for istation in range(len(sid1.stations)):
-                sid1.data[:, istation] += \
-                    sid2.get_station_data(sid1.stations[istation])
-            sid1.write_data_supersid(fmerge(sid1.filename),
-                                     apply_bema=False)
-            print(fmerge(sid1.filename), "created.")
+            if sid1.sid_params['logtype'] == sid2.sid_params['logtype']:
+                for istation in range(len(sid1.stations)):
+                    sid1.data[:, istation] += \
+                        sid2.get_station_data(sid1.stations[istation])
+                sid1.write_data_supersid(fmerge(sid1.filename),
+                                         sid1.sid_params['logtype'],
+                                         apply_bema=False)
+                print(fmerge(sid1.filename), "created.")
+            else:
+                print(
+                    "Error: mismatch of the logtype. "
+                    f"Cannot merge '{sid1.sid_params['logtype']}' with "
+                    f"'{sid2.sid_params['logtype']}'")
         # one SID file and one SuperSID file:
         # merge the SuperSID's matching station to SID file
         elif sid1.isSuperSID != sid2.isSuperSID:
