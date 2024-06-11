@@ -356,7 +356,7 @@ class tkSidViewer():
         for s in self.controller.config.stations:
             color = colors[s['channel']]
             freq = int(s['frequency'])
-            self.psd_axes.axvline(x=freq, color=color)
+            self.psd_axes.axvline(x=freq, color=color, alpha=0.5)
             if top:
                 label = self.psd_axes.text(freq, bottom + (dist * 0.975),
                                            s['call_sign'],
