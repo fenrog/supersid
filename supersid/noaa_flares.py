@@ -19,7 +19,7 @@ import urllib.request
 import urllib.error
 import os
 from os import path
-from datetime import datetime, date
+import datetime
 
 from supersid_common import *
 
@@ -32,7 +32,7 @@ class NOAA_flares(object):
     def __init__(self, day):
         if isinstance(day, str):
             self.day = day[:8]  # limit to YYYYMMDD
-        elif isinstance(day, datetime) or isinstance(day, date):
+        elif isinstance(day, datetime.datetime) or isinstance(day, datetime.date):
             self.day = day.strftime('%Y%m%d')
         else:
             raise TypeError(
@@ -81,7 +81,7 @@ class NOAA_flares(object):
 
     def Tstamp(self, HHMM):
         # "201501311702" -> datetime(2015, 1, 31, 17, 2)
-        return datetime.strptime(self.day + HHMM, "%Y%m%d%H%M")
+        return datetime.datetime.strptime(self.day + HHMM, "%Y%m%d%H%M")
 
     def http_ngdc(self):
         """

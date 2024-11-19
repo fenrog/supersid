@@ -16,7 +16,7 @@ Licence:     Open to All
 20150801:
     - truncate ['utc_starttime'] to 19 chars
 """
-from datetime import datetime, timedelta
+import datetime
 import numpy
 
 from config import FILTERED, RAW
@@ -138,7 +138,7 @@ class SidFile():
 
     def set_all_date_attributes(self, keep_file_date=False):
         if not keep_file_date or "utc_starttime" not in self.sid_params:
-            utcnow = datetime.utcnow()
+            utcnow = datetime.datetime.now(datetime.UTC)
             self.sid_params["utc_starttime"] = \
                 "%d-%02d-%02d 00:00:00" \
                 % (utcnow.year, utcnow.month, utcnow.day)
@@ -171,13 +171,13 @@ class SidFile():
         first_data_line = self.lines[self.headerNbLines].split(",")
         if ':' in first_data_line[0]:  # time stamp is found in first column
             try:
-                datetime.strptime(first_data_line[0],
+                datetime.datetime.strptime(first_data_line[0],
                                   SidFile._TIMESTAMP_EXTENDED)
                 self.is_extended = True
                 SidFile._timestamp_format = SidFile._TIMESTAMP_EXTENDED
                 self.timestamp_format = SidFile._TIMESTAMP_EXTENDED
             except ValueError:
-                datetime.strptime(first_data_line[0],
+                datetime.datetime.strptime(first_data_line[0],
                                   SidFile._TIMESTAMP_STANDARD)
                 self.is_extended = False
                 SidFile._timestamp_format = SidFile._TIMESTAMP_STANDARD
@@ -214,7 +214,7 @@ class SidFile():
             print(
                 "Warning: read SuperSid extended file, time stamps are read & "
                 "converted from file.")
-            inData = numpy.loadtxt(self.lines, dtype=datetime, comments='#',
+            inData = numpy.loadtxt(self.lines, dtype=datetime.datetime, comments='#',
                                    delimiter=",", converters=converters_dict)
             self.timestamp = inData[:, 0]  # column 0
             self.data = numpy.array(inData[:, 1:], dtype=float).transpose()
@@ -232,7 +232,7 @@ class SidFile():
                 print(
                     "Warning: read SID file, timestamps are read & converted "
                     "from file.")
-                inData = numpy.loadtxt(self.lines, dtype=datetime,
+                inData = numpy.loadtxt(self.lines, dtype=datetime.datetime,
                                        comments='#', delimiter=",",
                                        converters=converters_dict)
                 self.timestamp = inData[:, 0]  # column 0
@@ -254,13 +254,13 @@ class SidFile():
         if type(strTimestamp) is not str:  # i.e. byte array
             strTimestamp = strTimestamp.decode('utf-8')
         try:
-            dts = datetime.strptime(strTimestamp, SidFile._timestamp_format)
+            dts = datetime.datetime.strptime(strTimestamp, SidFile._timestamp_format)
         except ValueError:  # try the other format...
             if SidFile._timestamp_format == SidFile._TIMESTAMP_STANDARD:
-                dts = datetime.strptime(strTimestamp,
+                dts = datetime.datetime.strptime(strTimestamp,
                                         SidFile._TIMESTAMP_EXTENDED)
             else:
-                dts = datetime.strptime(strTimestamp,
+                dts = datetime.datetime.strptime(strTimestamp,
                                         SidFile._TIMESTAMP_STANDARD)
         return dts
 
@@ -278,13 +278,13 @@ class SidFile():
         if 1 == len(self.data.shape):
             # self.data is one deminsional
             # if one station is configured
-            self.timestamp = numpy.empty(len(self.data), dtype=datetime)
+            self.timestamp = numpy.empty(len(self.data), dtype=datetime.datetime)
         elif 2 == len(self.data.shape):
             # self.data is two deminsional
             # if more than one station is configured
-            self.timestamp = numpy.empty(len(self.data[0]), dtype=datetime)
+            self.timestamp = numpy.empty(len(self.data[0]), dtype=datetime.datetime)
         # add 'interval' seconds to UTC_StartTime for each entries
-        interval = timedelta(seconds=self.LogInterval)
+        interval = datetime.timedelta(seconds=self.LogInterval)
         currentTimestamp = self.startTime
         for i in range(len(self.timestamp)):
             self.timestamp[i] = currentTimestamp
