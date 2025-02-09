@@ -19,7 +19,7 @@ import sys
 import os.path
 import argparse
 import subprocess
-from datetime import datetime
+import datetime
 from matplotlib.mlab import psd as mlab_psd
 
 # SuperSID Package classes
@@ -55,7 +55,7 @@ class SuperSID():
             # if there are hourly saves ...
             if self.config['hourly_save'] == 'YES':
                 # ... figure out the file name ...
-                utcnow = datetime.utcnow()
+                utcnow = datetime.datetime.now(datetime.UTC)
                 utc_starttime = "%d-%02d-%02d 00:00:00" \
                     % (utcnow.year, utcnow.month, utcnow.day)
                 fileName = self.config.data_path + \
