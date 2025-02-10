@@ -32,7 +32,7 @@ class SidTimer():
         self.lock = threading.Lock()
 
         self.time_now = time.time()
-        self.utc_now = datetime.datetime.now(datetime.UTC)
+        self.utc_now = datetime.datetime.now(datetime.timezone.utc)
         self.data_index = 0
 
         # wait for synchro on the next 'interval' sec
@@ -56,7 +56,7 @@ class SidTimer():
         """
         with self.lock:     # only one timer callback at a time
             self.time_now = time.time()
-            self.utc_now = datetime.datetime.now(datetime.UTC)
+            self.utc_now = datetime.datetime.now(datetime.timezone.utc)
             self._timer = threading.Timer(self.interval
                                           + self.expected_time
                                           - self.time_now, self._ontimer)

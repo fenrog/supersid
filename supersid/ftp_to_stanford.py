@@ -71,7 +71,7 @@ if __name__ == '__main__':
         else [s['call_sign'] for s in cfg.stations]  # i.e. else all stations
     # file list
     if args.askYesterday:
-        yesterday = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=1)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
         args.file_list.append(
             "{}{}{}_{}-{:02d}-{:02d}.csv"
             .format(

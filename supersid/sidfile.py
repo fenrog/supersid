@@ -138,7 +138,7 @@ class SidFile():
 
     def set_all_date_attributes(self, keep_file_date=False):
         if not keep_file_date or "utc_starttime" not in self.sid_params:
-            utcnow = datetime.datetime.now(datetime.UTC)
+            utcnow = datetime.datetime.now(datetime.timezone.utc)
             self.sid_params["utc_starttime"] = \
                 "%d-%02d-%02d 00:00:00" \
                 % (utcnow.year, utcnow.month, utcnow.day)

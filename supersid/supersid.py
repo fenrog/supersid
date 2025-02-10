@@ -55,7 +55,7 @@ class SuperSID():
             # if there are hourly saves ...
             if self.config['hourly_save'] == 'YES':
                 # ... figure out the file name ...
-                utcnow = datetime.datetime.now(datetime.UTC)
+                utcnow = datetime.datetime.now(datetime.timezone.utc)
                 utc_starttime = "%d-%02d-%02d 00:00:00" \
                     % (utcnow.year, utcnow.month, utcnow.day)
                 fileName = self.config.data_path + \
