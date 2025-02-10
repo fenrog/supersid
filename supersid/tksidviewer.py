@@ -97,7 +97,7 @@ class tkSidViewer():
 
         self.tk_root.config(menu=menubar)
 #        disabled as there is no maximized version for Windows
-#        found that shows the matpltlib buttons when maximized
+#        found that shows the matplotlib buttons when maximized
 #        try:
 #            # full screen, works in Windows but not in Linux
 #            self.tk_root.state('zoomed')

@@ -1,31 +1,45 @@
-# SuperSID on Linux (Ubuntu Server 20.04.3 LTS)
+# SuperSID on Linux (Ubuntu Server 22.04.5 LTS (64-bit))
 
-This has been tested on
+Do not use Ubuntu 24.04.1 LTS. This switched from PulseAudio to PipeWire.
+Further it changed to Python 3.12. Both causes issues that could not be solved
+within reasonable time.
 
-- Raspberry Pi 400 4GB
-- Lenovo PC
-- Debian GNU/Linux 10 (Buster) on a Dell Vostro desktop PC
+This installation guide has been tested on
+
+- Raspberry Pi 400 4GB RAM, 64GB SD card
 
 ## Preparation
 
 [Set up your Raspberry Pi](https://www.raspberrypi.com/documentation/computers/getting-started.html#setting-up-your-raspberry-pi)
-with the image **UBUNTU SERVER 20.04.3 LTS (RPI 3/4/400)** *64 bit server OS
-with long-term support for arm64 architectures*.  Boot on the new micro-SD card,
+with the image **Ubuntu Server 22.04.5 LTS (64-bit)** *Server OS with long-term
+support for RPi Zero 2W/3747400*.  Boot on the new micro-SD card,
 follow normal process for any fresh system install.  Connect to the internet.
+
+Execute the classic:
+```console
+    $ sudo apt update
+    $ sudo apt upgrade
+```
 
 Install the x-server.
 ```console
     $ sudo apt install xinit
+    $ sudo apt install xorg
+    $ sudo apt install openbox
 ```
-Reboot.  X will start.  Do the language setup and further required settings like
-WiFi, language, keyboard layout, time zone, ...  Verify in the settings your
-sound card is set as input and output device.
 
-Execute the classic:
+Reboot.
 ```console
-    $ sudo apt-get update
-    $ sudo apt-get upgrade
+    $ sudo reboot now
 ```
+
+```console
+    $ startx
+```
+X will start.  Do the required settings like WiFi, language, keyboard layout,
+time zone, ...  Verify in the settings your sound card is set as input and
+output device.
+
 ## 1) Get the latest supersid software
 
 Get the source from GitHub.com
@@ -77,8 +91,8 @@ If you 'NTP service: active' the serivce has to be disabled.
 ## 2.2) install and enable ntpd
 If your machine does not have ntp installed then you want to install it:
 ```console
-    $ sudo apt-get purge ntp ntpsec
-    $ sudo apt-get install ntpdate ntp
+    $ sudo apt purge ntp ntpsec
+    $ sudo apt install ntpdate ntp
 ```
 
 Follow the tutorial [Raspberry Pi sync date and time](https://victorhurdugaci.com/raspberry-pi-sync-date-and-time)
@@ -126,8 +140,8 @@ Install the venv package.
 For Ubuntu use the following command (matching your Python 3.x version):
 ```console
     $ python3 --version
-    Python 3.8.10
-    $ sudo apt install python3.8-venv
+    Python 3.10.12
+    $ sudo apt install python3.10-venv
 ```
 
 
@@ -168,14 +182,19 @@ supersid-env/bin/activate'.
     $ source supersid-env/bin/activate
 ```
 
+If you want to leave the virtual environment, you can deactivate it.
+```console
+    $ deactivate
+```
+
 Now install the system level packages you will need
 ```console
-    $ sudo apt-get install python3-matplotlib
-    $ sudo apt-get install python3-pip
-    $ sudo apt-get install libasound2-dev
-    $ sudo apt-get install libatlas-base-dev
-    $ sudo apt-get install python3-numpy
-    $ sudo apt-get install python3-pandas
+    $ sudo apt install python3-matplotlib
+    $ sudo apt install python3-pip
+    $ sudo apt install libasound2-dev
+    $ sudo apt install libatlas-base-dev
+    $ sudo apt install python3-numpy
+    $ sudo apt install python3-pandas
     $ cd ~/supersid
     $ pip3 install -r requirements.txt
 ```
@@ -185,7 +204,7 @@ libraries:
 ```console
     $ sudo apt install libportaudio2
     $ pip3 install sounddevice
-    $ sudo apt-get install python3-pyaudio
+    $ sudo apt install python3-pyaudio
 ```
 
 
@@ -322,7 +341,7 @@ In the given example the following setup is present:
 
 Install several utilities.
 ```console
-    $ sudo apt-get install alsa-base alsa-utils pulseaudio-utils hwinfo
+    $ sudo apt install alsa-base alsa-utils pulseaudio-utils hwinfo
 ```
 
 Add user to audio group.  Lets assume your username is *klaus* and it is missing
