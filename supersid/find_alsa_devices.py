@@ -1120,7 +1120,7 @@ If not set a loopback from DEVICE line out to DEVICE line in is expected.
             args.device,
             args.test_tone,
             args.save_wav,
-            config.data_path)
+            config['data_path'])
     else:
         print(
             "ERROR: 'alsaaudio' is not available.\n"
