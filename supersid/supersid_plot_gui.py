@@ -26,7 +26,7 @@ import ephem
 from sidfile import SidFile
 from noaa_flares import NOAA_flares
 from supersid_common import exist_file
-from config import readConfig, printConfig, CONFIG_FILE_NAME
+from config import read_config, print_config, CONFIG_FILE_NAME
 
 
 def m2hm(x, i):
@@ -73,7 +73,7 @@ class Plot_Gui(ttk.Frame):
         r = int(r * 255)
         g = int(g * 255)
         b = int(b * 255)
-        tkinter_color = "#{:02X}{:02X}{:02X}".format(r, g, b)
+        tkinter_color = f"#{r:02X}{g:02X}{b:02X}"
         return tkinter_color
 
     def init_gui(self, file_list):
@@ -294,9 +294,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read the configuration file or exit
-    config = readConfig(args.cfg_filename)
+    config = read_config(args.cfg_filename)
     if args.verbose:
-        printConfig(config)
+        print_config(config)
 
     root = tk.Tk()
     Plot_Gui(root, config, args.file_list)
