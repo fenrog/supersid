@@ -29,7 +29,7 @@ from supersid_common import exist_file
 from config import read_config, print_config, CONFIG_FILE_NAME
 
 
-def m2hm(x, i):
+def m2hm(x, _):
     """Small function to format the time on horizontal axis - minor ticks."""
     t = matplotlib.dates.num2date(x)
     h = t.hour
@@ -38,7 +38,7 @@ def m2hm(x, i):
     return '%(h)02d:%(m)02d' % {'h': h, 'm': m} if h % 2 == 1 else ''
 
 
-def m2yyyymmdd(x, i):
+def m2yyyymmdd(x, _):
     """Small function to format the date on horizontal axis - major ticks."""
     t = matplotlib.dates.num2date(x)
     y = t.year
@@ -47,34 +47,36 @@ def m2yyyymmdd(x, i):
     return '%(y)04d-%(m)02d-%(d)02d    .' % {'y': y, 'm': m, 'd': d}
 
 
-class Plot_Gui(ttk.Frame):
+def convert_to_tkinter_color(matplotlib_color):
+    r, g, b = matplotlib.colors.to_rgb(matplotlib_color.rstrip('-'))
+    r = int(r * 255)
+    g = int(g * 255)
+    b = int(b * 255)
+    tkinter_color = f"#{r:02X}{g:02X}{b:02X}"
+    return tkinter_color
+
+
+class PlotGui(ttk.Frame):
     """Supersid Plot GUI in tk."""
 
-    def __init__(self, parent, config, file_list, *args, **kwargs):
+    def __init__(self, parent, cfg, file_list, *args, **kwargs):
         ttk.Frame.__init__(self, parent, *args, **kwargs)
         matplotlib.use('TkAgg')
         self.version = "1.0 20170902 (tk)"
         self.tk_root = parent
-        self.config = config
+        self.cfg = cfg
         self.hidden_stations = set()  # hide the graph if the station in set
-        self.colorStation = {}        # the color assigned to a station
+        self.color_station = {}       # the color assigned to a station
         self.sid_files = []           # ordered list of sid files read
+        self.graph = None
         self.init_gui(file_list)
 
-    def get_station_color(self, config, call_sign):
-        if config:
-            for station in config.stations:
+    def get_station_color(self, call_sign):
+        if self.cfg:
+            for station in self.cfg.stations:
                 if call_sign == station['call_sign']:
                     return station['color'] or None
         return None
-
-    def convert_to_tkinter_color(self, matplotlib_color):
-        r, g, b = matplotlib.colors.to_rgb(matplotlib_color.rstrip('-'))
-        r = int(r * 255)
-        g = int(g * 255)
-        b = int(b * 255)
-        tkinter_color = f"#{r:02X}{g:02X}{b:02X}"
-        return tkinter_color
 
     def init_gui(self, file_list):
         """Build GUI."""
@@ -115,21 +117,21 @@ class Plot_Gui(ttk.Frame):
                                     max(self.sid_files[0].data[0]))
                 print(sid_file.startTime, station)
                 # Does this station already have a color? if not, reserve one
-                if station not in self.colorStation:
-                    self.colorStation[station] = \
-                        self.get_station_color(config, station)
-                    if (self.colorStation[station] is None):
+                if station not in self.color_station:
+                    self.color_station[station] = \
+                        self.get_station_color(station)
+                    if self.color_station[station] is None:
                         # format like 'b-'
-                        self.colorStation[station] = \
+                        self.color_station[station] = \
                             color_list[color_idx % len(color_list)] + '-'
                         color_idx += 1
                 # Add points to the plot
                 self.graph.plot_date(sid_file.timestamp,
                                      sid_file.get_station_data(station),
-                                     self.colorStation[station])
+                                     self.color_station[station])
         # add the buttons to show/add a station's curve
-        for s, c in self.colorStation.items():
-            btn_color = self.convert_to_tkinter_color(c)
+        for s, c in self.color_station.items():
+            btn_color = convert_to_tkinter_color(c)
             station_button = tk.Button(
                 self.tk_root, text=s,
                 bg=btn_color, activebackground="white")
@@ -169,7 +171,7 @@ class Plot_Gui(ttk.Frame):
     def on_click_station(self, station, button):
         """Invert the color of the button. Hide/draw corresponding graph."""
         print("click on", station)
-        alt_color = self.convert_to_tkinter_color(self.colorStation[station])
+        alt_color = convert_to_tkinter_color(self.color_station[station])
         if station in self.hidden_stations:
             self.hidden_stations.remove(station)
             button.configure(bg=alt_color, activebackground="white")
@@ -226,9 +228,12 @@ class Plot_Gui(ttk.Frame):
                                        max(sid_file.timestamp),
                                        facecolor='blue', alpha=0.1)
                 else:
-                    self.graph.axvspan(sid_file.setting.datetime(),
-                                       sid_file.rising.datetime(),
-                                       facecolor='blue', alpha=0.1)
+                    self.graph.axvspan(
+                        max(sid_file.startTime,
+                            sid_file.setting.datetime()),
+                        min(sid_file.rising.datetime(),
+                            max(sid_file.timestamp)),
+                        facecolor='blue', alpha=0.1)
 
         self.canvas.draw()
 
@@ -242,7 +247,7 @@ class Plot_Gui(ttk.Frame):
                 # Add points to the plot
                 self.graph.plot_date(sid_file.timestamp,
                                      sid_file.get_station_data(station),
-                                     self.colorStation[station])
+                                     self.color_station[station])
         self.show_figure()
 
     def calc_ephem(self):
@@ -270,8 +275,7 @@ class Plot_Gui(ttk.Frame):
             # print(setting, ephem.localtime(setting))
 
 
-if __name__ == '__main__':
-    filenames = ""
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c", "--config",
@@ -294,10 +298,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read the configuration file or exit
-    config = read_config(args.cfg_filename)
+    cfg = read_config(args.cfg_filename)
     if args.verbose:
-        print_config(config)
+        print_config(cfg)
 
     root = tk.Tk()
-    Plot_Gui(root, config, args.file_list)
+    PlotGui(root, cfg, args.file_list)
     root.mainloop()
+
+
+if __name__ == '__main__':
+    main()

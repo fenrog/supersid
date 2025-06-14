@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import argparse
 from argparse import RawTextHelpFormatter
-import importlib.resources
+import pkg_resources    # python3 -m pip install setuptools
 from struct import unpack as st_unpack
 from numpy import array
 from matplotlib.mlab import psd as mlab_psd
