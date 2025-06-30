@@ -15,12 +15,13 @@
 import os.path
 import argparse
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, SUNKEN, RAISED
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigureCanvas
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter as ff
+from datetime import datetime, timezone
 import ephem
 
 from sidfile import SidFile
@@ -29,8 +30,13 @@ from supersid_common import exist_file
 from supersid_config import read_config, print_config, CONFIG_FILE_NAME
 
 
+def format_coord(x, y):
+    t = matplotlib.dates.num2date(x)
+    return f"(x, y) = ({t.year:04d}-{t.month:02d}-{t.day:02d} {t.hour:02d}:{t.minute:02d}, {y:0.2E})"
+
+
 def m2hm(x, _):
-    """Small function to format the time on horizontal axis - minor ticks."""
+    """Small function to format the time on horizontal axis, minor ticks"""
     t = matplotlib.dates.num2date(x)
     h = t.hour
     m = t.minute
@@ -39,12 +45,12 @@ def m2hm(x, _):
 
 
 def m2yyyymmdd(x, _):
-    """Small function to format the date on horizontal axis - major ticks."""
+    """Small function to format the date on horizontal axis, major ticks"""
     t = matplotlib.dates.num2date(x)
     y = t.year
     m = t.month
     d = t.day
-    return '%(y)04d-%(m)02d-%(d)02d    .' % {'y': y, 'm': m, 'd': d}
+    return '%(y)04d-%(m)02d-%(d)02d' % {'y': y, 'm': m, 'd': d}
 
 
 def convert_to_tkinter_color(matplotlib_color):
@@ -59,7 +65,7 @@ def convert_to_tkinter_color(matplotlib_color):
 class PlotGui(ttk.Frame):
     """Supersid Plot GUI in tk."""
 
-    def __init__(self, parent, cfg, file_list, *args, **kwargs):
+    def __init__(self, parent, cfg, file_list, overlay, *args, **kwargs):
         ttk.Frame.__init__(self, parent, *args, **kwargs)
         matplotlib.use('TkAgg')
         self.version = "1.0 20170902 (tk)"
@@ -69,6 +75,7 @@ class PlotGui(ttk.Frame):
         self.color_station = {}       # the color assigned to a station
         self.sid_files = []           # ordered list of sid files read
         self.graph = None
+        self.overlay = overlay
         self.init_gui(file_list)
 
     def get_station_color(self, call_sign):
@@ -103,11 +110,20 @@ class PlotGui(ttk.Frame):
         self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Add data to the graph for each file
+        if self.overlay:
+            alpha_step = 1.0 / len(file_list)
+            alpha = alpha_step
+        else:
+            alpha = 1.0
         for filename in sorted(file_list):
             sid_file = SidFile(filename)
+            if self.overlay:
+                sid_file.startTime = datetime.fromtimestamp(0, timezone.utc)
+                for i in range(len(sid_file.timestamp)):
+                    sid_file.timestamp[i] = sid_file.timestamp[i].replace(year=1970, month=1, day=1)
 
             # list will be populated if the user click on 'NOAA' button
-            sid_file.XRAlist = []
+            sid_file.xra_list = []
 
             self.sid_files.append(sid_file)
             self.daysList[sid_file.startTime] = []
@@ -129,21 +145,37 @@ class PlotGui(ttk.Frame):
                 self.graph.xaxis.axis_date()
                 self.graph.plot(sid_file.timestamp,
                                 sid_file.get_station_data(station),
-                                self.color_station[station])
+                                self.color_station[station],
+                                alpha=alpha)
+            if self.overlay:
+                alpha += alpha_step
+
         # add the buttons to show/add a station's curve
         for s, c in self.color_station.items():
             btn_color = convert_to_tkinter_color(c)
+            button_border = tk.Frame(
+                self.tk_root,
+                highlightbackground=btn_color,
+                highlightcolor=btn_color,
+                highlightthickness=2,
+                bd=0
+                )
             station_button = tk.Button(
-                self.tk_root, text=s,
-                bg=btn_color, activebackground="white")
+                button_border, text=s,
+                relief=SUNKEN,
+                bg="white", activebackground="white")
             station_button.configure(
                 command=lambda s=s,
                 b=station_button: self.on_click_station(s, b))
-            station_button.pack(side='left', padx=1, pady=1)
+            station_button.pack()
+            button_border.pack(side='left', padx=1, pady=1)
 
-        noaa_button = tk.Button(self.tk_root, text="NOAA",
-                                command=self.on_click_noaa)
-        noaa_button.pack(side='left', padx=1, pady=1)
+        if not self.overlay:
+            noaa_button = tk.Button(self.tk_root, text="NOAA",
+                                    relief=RAISED,
+                                    bg="lightgray", activebackground="white")
+            noaa_button.configure(command=lambda b=noaa_button: self.on_click_noaa(b))
+            noaa_button.pack(side='left', padx=1, pady=1)
         # other GUI items
         self.statusbar_txt = tk.StringVar()
         self.label = tk.Label(self.tk_root,
@@ -156,90 +188,101 @@ class PlotGui(ttk.Frame):
         self.calc_ephem()   # calculate the sun rise/set for each file
         self.show_figure()  # add other niceties and show the plot
 
-    def on_click_noaa(self):
+    def on_click_noaa(self, button):
         for sid_file in self.sid_files:
-            if sid_file.XRAlist:
-                sid_file.XRAlist = []  # no longer to be displayed
+            if sid_file.xra_list:
+                sid_file.xra_list = []  # no longer to be displayed
+                button.configure(bg="lightgray", relief=RAISED)
             elif self.daysList[sid_file.startTime]:
-                sid_file.XRAlist = self.daysList[sid_file.startTime]
+                sid_file.xra_list = self.daysList[sid_file.startTime]
+                button.configure(bg="white", relief=SUNKEN)
             else:
                 nf = NOAA_flares(sid_file.startTime)
-                nf.print_XRAlist()
-                self.daysList[sid_file.startTime] = nf.XRAlist
-                sid_file.XRAlist = self.daysList[sid_file.startTime]
+                nf.print_xra_list()
+                self.daysList[sid_file.startTime] = nf.get_xra_list()
+                sid_file.xra_list = self.daysList[sid_file.startTime]
+                button.configure(bg="white", relief=SUNKEN)
         self.update_graph()
 
     def on_click_station(self, station, button):
         """Invert the color of the button. Hide/draw corresponding graph."""
         print("click on", station)
-        alt_color = convert_to_tkinter_color(self.color_station[station])
         if station in self.hidden_stations:
             self.hidden_stations.remove(station)
-            button.configure(bg=alt_color, activebackground="white")
+            button.configure(bg="white", relief=SUNKEN)
         else:
             self.hidden_stations.add(station)
-            button.configure(bg="white", activebackground=alt_color)
+            button.configure(bg="lightgray", relief=RAISED)
         self.update_graph()
 
     def show_figure(self):
         """Cosmetics on the figure."""
         current_axes = self.fig.gca()
         current_axes.xaxis.set_minor_locator(matplotlib.dates.HourLocator())
-        current_axes.xaxis.set_major_locator(matplotlib.dates.DayLocator())
+        if self.overlay:
+            current_axes.set_xticks([])
+        else:
+            current_axes.xaxis.set_major_locator(matplotlib.dates.DayLocator())
         current_axes.xaxis.set_major_formatter(ff(m2yyyymmdd))
         current_axes.xaxis.set_minor_formatter(ff(m2hm))
         current_axes.set_xlabel("UTC Time")
         current_axes.set_ylabel("Signal Strength")
+        current_axes.format_coord = format_coord
 
         for label in current_axes.xaxis.get_majorticklabels():
             label.set_fontsize(8)
             label.set_rotation(30)  # 'vertical')
-            # label.set_horizontalalignment='left'
 
         for label in current_axes.xaxis.get_minorticklabels():
             label.set_fontsize(12 if len(self.daysList.keys()) == 1 else 8)
 
-        # specific drawings  linked to each sid_file: flares and sunrise/sunset
-        bottom_max, top_max = current_axes.get_ylim()
-        for sid_file in self.sid_files:
-            # for each flare, draw the lines and box with flares intensity
-            for eventName, BeginTime, MaxTime, EndTime, Particulars \
-                    in sid_file.XRAlist:
-                self.graph.vlines(
-                    [BeginTime, MaxTime, EndTime], 0,
-                    self.max_data, color=['g', 'r', 'y'],
-                    linestyles='dotted')
-                self.graph.text(
-                    MaxTime,
-                    self.max_data + (top_max - self.max_data) / 4.0,
-                    Particulars, horizontalalignment='center',
-                    bbox={
-                        'facecolor': 'w',
-                        'alpha': 0.5,
-                        'fill': True})
-            if (sid_file.rising is not None) \
-            and (sid_file.setting is not None):
-                # draw the rectangles for rising and setting of the sun.
-                # Use astronomical twilight
-                if sid_file.rising < sid_file.setting:
-                    self.graph.axvspan(sid_file.startTime,
-                                       sid_file.rising.datetime(),
-                                       facecolor='blue', alpha=0.1)
-                    self.graph.axvspan(sid_file.setting.datetime(),
-                                       max(sid_file.timestamp),
-                                       facecolor='blue', alpha=0.1)
-                else:
-                    self.graph.axvspan(
-                        max(sid_file.startTime,
-                            sid_file.setting.datetime()),
-                        min(sid_file.rising.datetime(),
-                            max(sid_file.timestamp)),
-                        facecolor='blue', alpha=0.1)
+        if not self.overlay:
+            # specific drawings  linked to each sid_file: flares and sunrise/sunset
+            bottom_max, top_max = current_axes.get_ylim()
+            for sid_file in self.sid_files:
+                # for each flare, draw the lines and box with flares intensity
+                for eventName, BeginTime, MaxTime, EndTime, Particulars \
+                        in sid_file.xra_list:
+                    self.graph.vlines(
+                        [BeginTime, MaxTime, EndTime], 0,
+                        self.max_data, color=['g', 'r', 'y'],
+                        linestyles='dotted')
+                    self.graph.text(
+                        MaxTime,
+                        self.max_data + (top_max - self.max_data) / 4.0,
+                        Particulars, horizontalalignment='center',
+                        bbox={
+                            'facecolor': 'w',
+                            'alpha': 0.5,
+                            'fill': True})
+                if (sid_file.rising is not None) \
+                and (sid_file.setting is not None):
+                    # draw the rectangles for rising and setting of the sun.
+                    # Use astronomical twilight
+                    if sid_file.rising < sid_file.setting:
+                        self.graph.axvspan(sid_file.startTime,
+                                           sid_file.rising.datetime(),
+                                           facecolor='blue', alpha=0.1)
+                        self.graph.axvspan(sid_file.setting.datetime(),
+                                           max(sid_file.timestamp),
+                                           facecolor='blue', alpha=0.1)
+                    else:
+                        self.graph.axvspan(
+                            max(sid_file.startTime,
+                                sid_file.setting.datetime()),
+                            min(sid_file.rising.datetime(),
+                                max(sid_file.timestamp)),
+                            facecolor='blue', alpha=0.1)
 
         self.canvas.draw()
 
     def update_graph(self):
-        # Redraw the selected stations on a clear graph
+        """Redraw the selected stations on a clear graph"""
+        if self.overlay:
+            alpha_step = 1.0 / len(self.sid_files)
+            alpha = alpha_step
+        else:
+            alpha = 1.0
         self.fig.clear()
         self.graph = self.fig.add_subplot(111)
         for sid_file in self.sid_files:
@@ -249,7 +292,10 @@ class PlotGui(ttk.Frame):
                 self.graph.xaxis.axis_date()
                 self.graph.plot(sid_file.timestamp,
                                 sid_file.get_station_data(station),
-                                self.color_station[station])
+                                self.color_station[station],
+                                alpha=alpha)
+            if self.overlay:
+                alpha += alpha_step
         self.show_figure()
 
     def calc_ephem(self):
@@ -286,6 +332,12 @@ def main():
         default=CONFIG_FILE_NAME,
         help="Supersid configuration file")
     parser.add_argument(
+        "-o", "--overlay",
+        action="store_true",
+        dest="overlay",
+        default=False,
+        help="Ignore the date. Plot all diagrams in one 24 hour window.")
+    parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         dest="verbose",
@@ -305,7 +357,7 @@ def main():
         print_config(cfg)
 
     root = tk.Tk()
-    PlotGui(root, cfg, args.file_list)
+    PlotGui(root, cfg, args.file_list, args.overlay)
     root.mainloop()
 
 

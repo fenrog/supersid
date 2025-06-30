@@ -23,6 +23,22 @@ import glob
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter as ff
 import matplotlib.dates
+try:
+    import matplotlib.backends.backend_ps
+except ModuleNotFoundError:
+    pass
+try:
+    import matplotlib.backends.backend_pdf
+except ModuleNotFoundError:
+    pass
+try:
+    import matplotlib.backends.backend_pgf
+except ModuleNotFoundError:
+    pass
+try:
+    import matplotlib.backends.backend_svg
+except ModuleNotFoundError:
+    pass
 import math
 # Internet and Email modules
 import mimetypes
@@ -106,26 +122,33 @@ def sendMail(config, To_mail, msgBody, PDFfile):
     # Send the email - real from, real to, extra headers and content ...
     s.sendmail(senderEmail, To_mail, msg.as_string())
     s.close()
-    print("Email to %s sent." % To_mail)
+    print(f"Email with {PDFfile} sent to {To_mail}.")
+
+
+def format_coord(x, y):
+    t = matplotlib.dates.num2date(x)
+    return f"(x, y) = ({t.year:04d}-{t.month:02d}-{t.day:02d} {t.hour:02d}:{t.minute:02d}, {y:0.2E})"
+
+
+def m2hm(x, _):
+    """Small function to format the time on horizontal axis, minor ticks"""
+    t = matplotlib.dates.num2date(x)
+    h = t.hour
+    m = t.minute
+    # only for odd hours
+    return '%(h)02d:%(m)02d' % {'h': h, 'm': m} if h % 2 == 1 else ''
+
+
+def m2yyyymmdd(x, _):
+    """Small function to format the date on horizontal axis, major ticks"""
+    t = matplotlib.dates.num2date(x)
+    y = t.year
+    m = t.month
+    d = t.day
+    return '%(y)04d-%(m)02d-%(d)02d' % {'y': y, 'm': m, 'd': d}
 
 
 class SUPERSID_PLOT():
-
-    def m2hm(self, x, i):
-        """Small function to format the time on horizontal axis, minor ticks"""
-        t = matplotlib.dates.num2date(x)
-        h = t.hour
-        m = t.minute
-        # only for odd hours
-        return '%(h)02d:%(m)02d' % {'h': h, 'm': m} if h % 2 == 1 else ''
-
-    def m2yyyymmdd(self, x, i):
-        """Small function to format the date on horizontal axis, major ticks"""
-        t = matplotlib.dates.num2date(x)
-        y = t.year
-        m = t.month
-        d = t.day
-        return '%(y)04d-%(m)02d-%(d)02d --' % {'y': y, 'm': m, 'd': d}
 
     def get_station_color(self, config, call_sign):
         if config:
@@ -185,11 +208,12 @@ class SUPERSID_PLOT():
         current_axes = fig.gca()
         current_axes.xaxis.set_minor_locator(matplotlib.dates.HourLocator())
         current_axes.xaxis.set_major_locator(matplotlib.dates.DayLocator())
-        current_axes.xaxis.set_major_formatter(ff(self.m2yyyymmdd))
-        current_axes.xaxis.set_minor_formatter(ff(self.m2hm))
+        current_axes.xaxis.set_major_formatter(ff(m2yyyymmdd))
+        current_axes.xaxis.set_minor_formatter(ff(m2hm))
         current_axes.xaxis.axis_date()
         current_axes.set_xlabel("UTC Time")
         current_axes.set_ylabel("Signal Strength")
+        current_axes.format_coord = format_coord
 
         # Get data from files
         maxData, data_length = -1, -1  # impossible values
@@ -214,7 +238,9 @@ class SUPERSID_PLOT():
             sFile = SidFile(filename)
             for station in sFile.stations:
                 # Does this station already have a color? if not, reserve one
+                label = None
                 if station not in colorStation:
+                    label = station
                     colorStation[station] = \
                         self.get_station_color(config, station)
                     if (colorStation[station] is None):
@@ -226,7 +252,7 @@ class SUPERSID_PLOT():
                 plt.plot(sFile.timestamp,
                          sFile.get_station_data(station),
                          colorStation[station],
-                         label=station)
+                         label=label)
                 # Extra housekeeping
 
                 # maxData will be used later to put the XRA labels up
@@ -337,7 +363,6 @@ class SUPERSID_PLOT():
         for label in current_axes.xaxis.get_majorticklabels():
             label.set_fontsize(8)
             label.set_rotation(30)  # 'vertical')
-            # label.set_horizontalalignment='left'
 
         for label in current_axes.xaxis.get_minorticklabels():
             label.set_fontsize(12 if len(daysList) == 1 else 8)
@@ -374,13 +399,17 @@ def do_main(filelist, args, config):
 
 
 if __name__ == '__main__':
+    file_formats = [f".{ext}" for ext in plt.gcf().canvas.get_supported_filetypes().keys()]
+    plt.close()
     filenames = ""
     parser = argparse.ArgumentParser(
-        description="""Usage:   supersid_plot.py  filename.csv\n
-     Usage:   supersid_plot.py  "filename1.csv,filename2.csv,filename3.csv"\n
-     Usage:   supersid_plot.py  "filename*.csv"\n
-     Note: " are optional on Windows, mandatory on *nix\n
-     Other options:  supersid_plot.py -h\n""")
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""Examples:
+       supersid_plot.py filename.csv
+       supersid_plot.py filename1.csv filename2.csv filename3.csv
+       supersid_plot.py -f "filename1.csv,filename2.csv,filename3.csv"
+       supersid_plot.py -f "filename*.csv"
+       supersid_plot.py -h""")
     parser.add_argument(
         "-c", "--config",
         dest="cfg_filename",
@@ -395,8 +424,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "-p", "--pdf",
         dest="pdffilename",
-        help="Write the plot in a PDF file.",
-        metavar="filename.PDF")
+        help=f"Write the plot into file with the extension {file_formats}.",
+        metavar="filename.pdf")
     parser.add_argument(
         "-e", "--email",
         dest="email", nargs="?",
@@ -462,6 +491,13 @@ if __name__ == '__main__':
         help='file(s) to be plotted')
     args = parser.parse_args()
 
+    if args.pdffilename:
+        ext = os.path.splitext(args.pdffilename)[1]
+        if ext not in file_formats:
+            print(f"-p/--pdf: '{args.pdffilename}' extension '{ext}' is not in {file_formats}")
+            parser.print_help()
+            sys.exit(-1)
+
     # read the configuration file or exit
     config = read_config(args.cfg_filename)
     if args.verbose:
@@ -474,7 +510,7 @@ if __name__ == '__main__':
         else:
             # try building the file name from given options
             # or found in the provided .cfg file
-            Now = datetime.datetime.utcnow()  # by default today
+            Now = datetime.datetime.now(datetime.timezone.utc)  # by default today
             if args.askYesterday:
                 Now -= datetime.timedelta(days=1)
             # stations can be given as a comma delimited string
