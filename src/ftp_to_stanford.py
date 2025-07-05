@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Send SID data files to Stanford FTP server.
+Send SID data files to stanford.edu FTP server.
 
 Name:        ftp_to_stanford.py
 Author:      Eric Gibert
@@ -18,7 +18,7 @@ Script's Arguments:
     [data_path/<monitor_id>_YYYY_MM_DD.csv]
 [filename1 filename2 ...]: optional list of files to send
 
-Section in the configuration file:
+Example section in the configuration file:
 [FTP]
 automatic_upload = yes
 ftp_server = sid-ftp.stanford.edu
@@ -27,11 +27,23 @@ ftp_directory = /incoming/SuperSID/NEW/
 local_tmp = ../outgoing
 call_signs = NWC
 
+2022-01-02 Steve Berl Note:
+This code seems to do 2 independent things. That should probably be divided
+into 2 separate scripts.
+
+It converts a SuperSID format file to 1 or more SID format files. This is done
+because the Stanford ingestion scripts do not seem to recognize the SuperSID
+format properly.
+
+Then it sends this file via FTP to the server at Stanford.
+
 """
 import sys
 import argparse
 from os import path
+import sys
 import ftplib
+from socket import gaierror
 from datetime import datetime, timezone, timedelta
 from sidfile import SidFile
 from supersid_config import read_config, FILTERED, RAW, CONFIG_FILE_NAME
@@ -131,11 +143,17 @@ if __name__ == '__main__':
     # now sending the files by FTP
     if files_to_send and cfg['automatic_upload'] == 'yes':
         print("Opening FTP session with", cfg['ftp_server'])
-        data = []
 
-        ftp = ftplib.FTP(cfg['ftp_server'])
+        try:
+            ftp = ftplib.FTP(cfg['ftp_server'])
+        except gaierror as e:
+            print(e)
+            print("Check ftp_server in .cfg file")
+            sys.exit(1)
+
         ftp.login("anonymous", cfg['contact'])
         ftp.cwd(cfg['ftp_directory'])
+        print("putting files to ", cfg['ftp_directory'])
         # ftp.dir(data.append)
         for f in files_to_send:
             print(f"Sending {f}")

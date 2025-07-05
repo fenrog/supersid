@@ -16,6 +16,8 @@ Licence:     Open to All
 20150801:
     - truncate ['utc_starttime'] to 19 chars
 """
+
+import sys
 from datetime import datetime, timezone, timedelta
 import numpy
 
@@ -76,7 +78,7 @@ class SidFile():
             except IOError as why:
                 print("Error reading", filename)
                 print(str(why))
-                exit(1)
+                sys.exit(1)
 
             self.read_header()
             self.read_timestamp_format()
@@ -123,7 +125,7 @@ class SidFile():
             print(
                 "ERROR: No station ID found in this file or configuration. "
                 "Please check!")
-            exit(5)
+            sys.exit(5)
 
         # get the datetime for UTC_StartTime
         self.set_all_date_attributes(keep_file_date=True)

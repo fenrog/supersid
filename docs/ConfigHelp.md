@@ -4,11 +4,11 @@ SuperSID uses the parameters set in the provided configuration file passed as an
 It is possible to have more than one configuration file to launch the SuperSID application with different parameters. For example to specify different list of stations to monitor or to choose between graphic or text mode interface.
 
 The file can be located in any accessible directory provided that the fully qualified path is given. In case no path is provided, the default path '../Config/supersid.cfg' will be used.
- 
+
 # File Organization
 
 The configuration file is a simple text file formatted as a classic '.ini' structure i.e. sections with squared brackets and a list of pairs 'key=value"
- 
+
 The supported sections are:
 
   * [PARAMETERS](#id-section1)
@@ -16,7 +16,7 @@ The supported sections are:
   * [Capture](#id-section3)
   * [Email](#id-section4)
   * [FTP](#id-section5)
-  
+
 <div id='id-section1'/>
 
 ## [PARAMETERS]
@@ -32,7 +32,7 @@ This section groups most of the parameters identifying your SuperSID monitor. So
   * latitude: in decimal form
   * utc_offset:
   * time_zone:
-  
+
 ### Log Parameters
 
   * audio_sampling_rate: **48000**, **96000** or **192000** (you can experiment with other values as long as your device supports them)
@@ -65,11 +65,11 @@ This section groups most of the parameters identifying your SuperSID monitor. So
       The combination of **sid_extended** and **supersid_extended**.<br />
       This configuration is suitable for [FTP] automatic_upload = yes.
   * hourly_save: **yes** / **no** (default). If **yes** then a raw file is written every hour to limit data loss.
-  
+
 ### FTP to Standford server
 
 Version 1.4: FTP information is no longer part of the [PARAMETERS] section. Refer to the [FTP] section below.
-  
+
 ### Extra
 
   * scaling_factor: float, set it to **1.0**. The data captured from the sound card is multiplied with this value.
@@ -124,7 +124,7 @@ The 'supersid_plot.py' program can send you an email with the attached plot as a
   * email_tls: email server requires TLS **yes** / **no** (default)
   * email_login: [optional] if your server requires a login for identification
   * email_password: [optional] if your server requires a password for identification
-  
+
 <div id='id-section5'/>
 
 ## [FTP]
