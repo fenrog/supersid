@@ -150,7 +150,7 @@ if __name__ == '__main__':
             print("Check ftp_server in .cfg file")
             sys.exit(1)
 
-        ftp.login("anonymous", cfg['contact'])
+        ftp.login(cfg['ftp_login'], cfg['ftp_password'])
         ftp.cwd(cfg['ftp_directory'])
         print("putting files to ", cfg['ftp_directory'])
         for file_name in files_to_send:

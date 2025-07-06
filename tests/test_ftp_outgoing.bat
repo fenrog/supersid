@@ -11,18 +11,18 @@ if exist incoming rmdir incoming
 REM test socket.gaierror as the "UnknownServer" cannot be resolved
 set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=UnknownServer
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=15 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=14 & goto fail)
 
 REM test ConnectionRefusedError as the ftp server is not running
 set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=localhost
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=20 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=19 & goto fail)
 
 REM test missing "incoming" folder
 start "ftpserver" ftpserver.py
 set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=localhost
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=26 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=25 & goto fail)
 taskkill /fi "WINDOWTITLE eq ftpserver" > nul 2>&1
 
 REM test write permission denied (twistd doesn't allow anonymous write)
@@ -30,7 +30,7 @@ if not exist incoming mkdir incoming
 start "ftpserver" ftpserver.py
 set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=localhost
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=34 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=33 & goto fail)
 taskkill /fi "WINDOWTITLE eq ftpserver" > nul 2>&1
 
 REM test login failed due to unknown user
@@ -40,7 +40,7 @@ set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=localhost
 set UNITTEST_FTP_LOGIN=unknown_user
 set UNITTEST_FTP_PASSWORD=pass
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=34 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=43 & goto fail)
 taskkill /fi "WINDOWTITLE eq ftpserver" > nul 2>&1
 
 REM test login failed due to unknown password
@@ -50,7 +50,7 @@ set UNITTEST_SERVER_ERROR=True
 set UNITTEST_FTP_SERVER=localhost
 set UNITTEST_FTP_LOGIN=user
 set UNITTEST_FTP_PASSWORD=unknown_pass
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=34 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=53 & goto fail)
 taskkill /fi "WINDOWTITLE eq ftpserver" > nul 2>&1
 
 REM test happy day
@@ -65,7 +65,7 @@ set UNITTEST_SERVER_ERROR=False
 set UNITTEST_FTP_SERVER=localhost
 set UNITTEST_FTP_LOGIN=user
 set UNITTEST_FTP_PASSWORD=pass
-python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=47 & goto fail)
+python test_ftp_outgoing.py || (set UNITTEST_ERROR_LINE=68 & goto fail)
 taskkill /fi "WINDOWTITLE eq ftpserver" > nul 2>&1
 rmdir /S /Q incoming
 
