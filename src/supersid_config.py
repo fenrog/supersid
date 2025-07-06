@@ -215,10 +215,10 @@ class Config(dict):
                 # your email server requires TLS yes/no
                 ("email_tls", str, "no"),
 
-                # if your server requires a login
+                # if the mail server requires a login
                 ("email_login", str, ""),
 
-                # if your server requires a password
+                # if the mail server requires a password
                 ("email_password", str, ""),
             ),
 
@@ -228,6 +228,12 @@ class Config(dict):
 
                 # address of the server like sid-ftp.stanford.edu
                 ('ftp_server',  str, ""),
+
+                # if the ftp server requires a login
+                ("ftp_login", str, ""),
+
+                # if the ftp server requires a password
+                ("ftp_password", str, ""),
 
                 # remote target directory to write the files
                 ('ftp_directory', str, ""),
@@ -443,6 +449,28 @@ class Config(dict):
                                f"'automatic_upload = yes'.")
             return
 
+        if ((self['automatic_upload'] == 'yes') and
+                (self['local_tmp'] == '')):
+            self.config_ok = False
+            self.config_err = ("'local_tmp' must be set for 'automatic_upload = yes'.")
+            return
+
+        if (self['automatic_upload'] == 'yes'):
+            if (self['ftp_login'] == '') and (self['ftp_password'] == ''):
+                if self['contact'] == '':
+                    self.config_ok = False
+                    self.config_err = ("'contact' must be set for 'automatic_upload = yes' "
+                                       "and anonymous login.")
+                    return
+                self['ftp_login'] = 'anonymous'
+                self['ftp_password'] = self['contact']
+            elif (self['ftp_login'] != '') and (self['ftp_password'] != ''):
+                pass # both configured
+            else:
+                self.config_ok = False
+                self.config_err = ("if 'ftp_login' is configured also 'ftp_password' "
+                                   "must be configured and vice versa")
+                
         # check viewer
         self['viewer'] = self['viewer'].lower()
         if self['viewer'] not in ('text', 'tk'):

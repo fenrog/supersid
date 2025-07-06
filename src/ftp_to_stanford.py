@@ -25,7 +25,7 @@ ftp_server = sid-ftp.stanford.edu
 ftp_directory = /incoming/SuperSID/NEW/
 # local_tmp shall be an absolute path or a path relative to the src script folder
 local_tmp = ../outgoing
-call_signs = NWC
+call_signs = NWC,VTX3
 
 2022-01-02 Steve Berl Note:
 This code seems to do 2 independent things. That should probably be divided
@@ -41,7 +41,6 @@ Then it sends this file via FTP to the server at Stanford.
 import sys
 import argparse
 from os import path
-import sys
 import ftplib
 from socket import gaierror
 from datetime import datetime, timezone, timedelta
@@ -146,25 +145,22 @@ if __name__ == '__main__':
 
         try:
             ftp = ftplib.FTP(cfg['ftp_server'])
-        except gaierror as e:
-            print(e)
+        except gaierror as ex:
+            print(ex)
             print("Check ftp_server in .cfg file")
             sys.exit(1)
 
         ftp.login("anonymous", cfg['contact'])
         ftp.cwd(cfg['ftp_directory'])
         print("putting files to ", cfg['ftp_directory'])
-        # ftp.dir(data.append)
-        for f in files_to_send:
-            print(f"Sending {f}")
+        for file_name in files_to_send:
+            print(f"Sending {file_name}")
             try:
-                ftp.storlines("STOR " + path.basename(f), open(f, "rb"))
+                with open(file_name, 'rb') as file_desc:
+                    ftp.storlines("STOR " + path.basename(file_name), file_desc)
                 # TODO: delete file f once sent
                 # print("Deleted {}".format(f))
             except ftplib.error_perm as err:
-                print("Error sending", path.basename(f), ":", err)
+                print("Error sending", path.basename(file_name), ":", err)
         ftp.quit()
         print("FTP session closed.")
-
-        for line in data:
-            print("-", line)

@@ -131,11 +131,11 @@ The 'supersid_plot.py' program can send you an email with the attached plot as a
 
 Group all parameters to send data to an FTP server i.e. Standford data repository.
 
-  * automatic_upload: [yes/no] if set to 'yes' then trigger the FTP data upload. Please refer to 'log_format' above for further details.
+  * automatic_upload: [**yes** / **no**] if set to 'yes' then trigger the FTP data upload. Please refer to 'log_format' above for further details.
   * ftp_server: URL of the server (sid-ftp.stanford.edu)
   * ftp_directory: target folder on the FTP server where files should be written (on Standford's server: /incoming/SuperSID/NEW/)
   * local_tmp: local temporary directory used to write the files before their upload. If not mentioned then '../outgoing/' is used. If the path is relative, then it is relative to the script folder.
-  * call_signs: list of recorded stations to upload. Not all recorded stations might be of interrest: list only the most relevant one(s).
+  * call_signs: comma separated list of recorded stations to upload. No blanks are allowed in the list. Not all recorded stations might be of interrest: list only the most relevant one(s).
 
 ## Comments
 
